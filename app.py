@@ -64,3 +64,18 @@ if os.path.isfile(file_name):
     st.dataframe(df, use_container_width=True)
 else:
     st.info("目前還沒有紀錄，趕快開始你的第一次讀書吧！")
+
+# --- 6. 數據視覺化 (圖表) ---
+st.divider()
+st.subheader("📈 各科讀書時間總覽")
+
+if os.path.isfile(file_name):
+    df = pd.read_csv(file_name)
+    
+    # 確保檔案裡面有資料才畫圖
+    if not df.empty:
+        # 使用 Pandas 把資料依照 "Subject" (科目) 分組，並把 "Duration_Minutes" 加總
+        chart_data = df.groupby("Subject")["Duration_Minutes"].sum()
+        
+        # 使用 Streamlit 內建的長條圖畫出來
+        st.bar_chart(chart_data)
