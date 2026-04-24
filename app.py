@@ -67,15 +67,39 @@ else:
 
 # --- 6. 數據視覺化 (圖表) ---
 st.divider()
-st.subheader("📈 各科讀書時間總覽")
+st.subheader("📈 讀書時間總覽")
 
 if os.path.isfile(file_name):
     df = pd.read_csv(file_name)
     
-    # 確保檔案裡面有資料才畫圖
     if not df.empty:
-        # 使用 Pandas 把資料依照 "Subject" (科目) 分組，並把 "Duration_Minutes" 加總
-        chart_data = df.groupby("Subject")["Duration_Minutes"].sum()
+        # 🌟 步驟 1: 將 Date 欄位從「純文字」轉換為電腦懂的「時間格式」
+        df['Date'] = pd.to_datetime(df['Date'])
         
-        # 使用 Streamlit 內建的長條圖畫出來
-        st.bar_chart(chart_data)
+        # 🌟 步驟 2: 在網頁上建立一個按鈕選單 (Radio button)
+        time_filter = st.radio("過濾時間範圍：", ["全部時間", "今天", "最近 7 天"], horizontal=True)
+        
+        # 取得現在的精確時間
+        now = pd.Timestamp.now()
+        
+        # 🌟 步驟 3: 根據使用者的選擇，篩選資料 (Data Filtering)
+        if time_filter == "今天":
+            # 條件：只保留「日期」等於「今天日期」的資料
+            filtered_df = df[df['Date'].dt.date == now.date()]
+            
+        elif time_filter == "最近 7 天":
+            # 條件：只保留大於等於「7天前」的資料
+            seven_days_ago = now - pd.Timedelta(days=7)
+            filtered_df = df[df['Date'] >= seven_days_ago]
+            
+        else:
+            # 全部時間：不做任何篩選
+            filtered_df = df 
+
+        # 🌟 步驟 4: 把篩選過後的資料畫成圖表
+        if not filtered_df.empty:
+            chart_data = filtered_df.groupby("Subject")["Duration_Minutes"].sum()
+            st.bar_chart(chart_data)
+        else:
+            # 如果那個時間段沒有資料，給予溫馨提示
+            st.info(f"在「{time_filter}」這個範圍內，你還沒有任何讀書紀錄喔！趕快去讀書吧！")
