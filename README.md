@@ -23,3 +23,16 @@
 1. 將此專案 Clone 到本地端：
    ```bash
    git clone [https://github.com/JaydenForCS/study-tracker-app](https://github.com/JaydenForCS/study-tracker-app)
+
+2. 進入專案資料夾：
+    ```bash
+    cd study-tracker-app
+
+3. 安裝所需的 Python 套件：
+    ```bash
+    pip install -r requirements.txt
+
+4. 啟動 Streamlit 伺服器：
+    ```bash
+    streamlit run app.py
+
