@@ -53,15 +53,24 @@ with col2:
         else:
             st.warning("你還沒開始計時喔！")
 
-# --- 5. 顯示歷史紀錄 ---
-st.divider() # 畫一條分隔線
-st.subheader("📊 歷史讀書紀錄")
+# --- 5. 顯示與編輯歷史紀錄 ---
+st.divider() 
+st.subheader("📊 歷史讀書紀錄 (可直接修改與刪除)")
+st.write("💡 提示：你可以直接點擊表格修改內容，或是選取最左側的核取方塊來刪除整筆資料。修改完記得按儲存喔！")
 
 file_name = "study_records.csv"
 if os.path.isfile(file_name):
-    # 使用 Pandas 讀取 CSV，並用 Streamlit 顯示成精美表格
     df = pd.read_csv(file_name)
-    st.dataframe(df, use_container_width=True)
+    
+    # 將原本的 st.dataframe 換成 st.data_editor
+    # num_rows="dynamic" 代表允許使用者動態刪除或新增列數
+    edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+    
+    # 建立一個儲存按鈕，只有按下時才會把修改後的資料寫進 CSV
+    if st.button("💾 儲存表格修改", use_container_width=True):
+        # index=False 代表不要把表格最左邊的 0,1,2,3 序號存進去
+        edited_df.to_csv(file_name, index=False, encoding='utf-8')
+        st.success("✅ 紀錄已成功更新！請點擊右上角 Rerun 重新整理網頁查看最新圖表。")
 else:
     st.info("目前還沒有紀錄，趕快開始你的第一次讀書吧！")
 
