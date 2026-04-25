@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import csv
 import os
+import time
 
 # --- 1. 網頁基本設定 ---
 st.set_page_config(page_title="讀書追蹤 App", page_icon="📚")
@@ -70,7 +71,10 @@ if os.path.isfile(file_name):
     if st.button("💾 儲存表格修改", use_container_width=True):
         # index=False 代表不要把表格最左邊的 0,1,2,3 序號存進去
         edited_df.to_csv(file_name, index=False, encoding='utf-8')
-        st.success("✅ 紀錄已成功更新！請點擊右上角 Rerun 重新整理網頁查看最新圖表。")
+        
+        st.success("✅ 紀錄已成功更新！圖表更新中...")
+        time.sleep(1) # 讓成功訊息停留 1 秒鐘
+        st.rerun()    # 命令 Streamlit 自動重新整理！
 else:
     st.info("目前還沒有紀錄，趕快開始你的第一次讀書吧！")
 
@@ -180,12 +184,12 @@ with st.form("manual_entry_form"):
     
     # 當使用者按下送出按鈕後要執行的動作
     if submit_button:
-        # 1. 把日期和時間組合成我們 CSV 需要的格式
         datetime_str = f"{new_date} {new_time.strftime('%H:%M')}"
         
-        # 2. 寫入 CSV 檔案 (沿用我們之前學過的邏輯)
         with open(file_name, mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow([datetime_str, new_subject, new_duration, new_rating])
             
-        st.success("✅ 補登成功！請點擊右上角 Rerun 重新整理網頁查看最新圖表。")
+        st.success("✅ 補登成功！圖表更新中...")
+        time.sleep(1) # 讓成功訊息停留 1 秒鐘
+        st.rerun()    # 命令 Streamlit 自動重新整理！
