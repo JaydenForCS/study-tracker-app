@@ -22,4 +22,4 @@
 
 1. 將此專案 Clone 到本地端：
    ```bash
-   git clone [https://github.com/你的GitHub帳號/study-tracker-app.git](https://github.com/你的GitHub帳號/study-tracker-app.git)
+   git clone [https://github.com/JaydenForCS/study-tracker-app](https://github.com/JaydenForCS/study-tracker-app)
