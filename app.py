@@ -103,3 +103,44 @@ if os.path.isfile(file_name):
         else:
             # 如果那個時間段沒有資料，給予溫馨提示
             st.info(f"在「{time_filter}」這個範圍內，你還沒有任何讀書紀錄喔！趕快去讀書吧！")
+
+# --- 7. 專注度深度分析 ---
+st.divider()
+st.subheader("🎯 專注度深度分析")
+
+if os.path.isfile(file_name) and not df.empty:
+    # 這裡我們用剛才已經轉換過時間格式的 df 繼續操作
+    
+    # 建立三欄式佈局來放三種不同的數據
+    stat_col1, stat_col2 = st.columns(2)
+
+    with stat_col1:
+        st.write("📖 各科平均專注度")
+        # 依科目分組，計算評分平均值
+        subject_rating = df.groupby("Subject")["Rating"].mean()
+        st.bar_chart(subject_rating)
+
+    with stat_col2:
+        st.write("📅 每日平均專注度")
+        # 依日期 (不含時間) 分組，計算評分平均值
+        daily_rating = df.groupby(df['Date'].dt.date)["Rating"].mean()
+        st.line_chart(daily_rating) # 每日趨勢用折線圖比較好看
+
+    # --- 不同時間段的專注度分析 ---
+    st.write("⏰ 不同時段專注度分析")
+    
+    # 定義一個簡單的函數來判斷時段
+    def get_time_period(hour):
+        if 5 <= hour < 12: return "🌅 早上 (5-12)"
+        elif 12 <= hour < 18: return "☀️ 下午 (12-18)"
+        elif 18 <= hour < 24: return "🌙 晚上 (18-24)"
+        else: return "🦉 深夜 (0-5)"
+
+    # 創造一個新欄位「時段」
+    df['Period'] = df['Date'].dt.hour.apply(get_time_period)
+    
+    # 依照時段分組計算平均專注度
+    period_rating = df.groupby("Period")["Rating"].mean()
+    
+    # 顯示數據
+    st.bar_chart(period_rating)
