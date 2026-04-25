@@ -144,3 +144,39 @@ if os.path.isfile(file_name) and not df.empty:
     
     # 顯示數據
     st.bar_chart(period_rating)
+
+# --- 8. 手動補登紀錄 ---
+st.divider()
+st.subheader("✍️ 手動補登紀錄")
+st.write("忘記開計時器了嗎？沒關係，在這裡手動把讀書時間補上去吧！")
+
+# 建立一個表單，括號內的是表單的內部代號
+with st.form("manual_entry_form"):
+    # 建立多欄位佈局讓畫面更緊湊
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # 讓使用者選日期和時間
+        new_date = st.date_input("日期", pd.Timestamp.now().date())
+        new_time = st.time_input("時間", pd.Timestamp.now().time())
+        new_subject = st.text_input("科目", "物理")
+        
+    with col2:
+        # 限定只能輸入數字
+        new_duration = st.number_input("讀書時長 (分鐘)", min_value=1, value=60)
+        new_rating = st.slider("專注度評分 (補登)", 1, 5, 4)
+        
+    # 表單專屬的送出按鈕
+    submit_button = st.form_submit_button("💾 儲存補登紀錄", use_container_width=True)
+    
+    # 當使用者按下送出按鈕後要執行的動作
+    if submit_button:
+        # 1. 把日期和時間組合成我們 CSV 需要的格式
+        datetime_str = f"{new_date} {new_time.strftime('%H:%M')}"
+        
+        # 2. 寫入 CSV 檔案 (沿用我們之前學過的邏輯)
+        with open(file_name, mode='a', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow([datetime_str, new_subject, new_duration, new_rating])
+            
+        st.success("✅ 補登成功！請點擊右上角 Rerun 重新整理網頁查看最新圖表。")
