@@ -4,6 +4,10 @@ from datetime import datetime
 import csv
 import os
 import time
+from database import init_db, add_record, get_all_records
+
+# 初始化資料庫（如果檔案不存在會自動建立）
+init_db()
 
 # --- 1. 網頁基本設定 ---
 st.set_page_config(page_title="讀書追蹤 App", page_icon="📚")
@@ -61,7 +65,7 @@ st.write("💡 提示：你可以直接點擊表格修改內容，或是選取�
 
 file_name = "study_records.csv"
 if os.path.isfile(file_name):
-    df = pd.read_csv(file_name)
+    df = get_all_records()
     
     # 將原本的 st.dataframe 換成 st.data_editor
     # num_rows="dynamic" 代表允許使用者動態刪除或新增列數
@@ -186,9 +190,8 @@ with st.form("manual_entry_form"):
     if submit_button:
         datetime_str = f"{new_date} {new_time.strftime('%H:%M')}"
         
-        with open(file_name, mode='a', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow([datetime_str, new_subject, new_duration, new_rating])
+        # 呼叫我們剛剛寫的 SQL 函數
+        add_record(record_date, subject, minutes_spent, rating)
             
         st.success("✅ 補登成功！圖表更新中...")
         time.sleep(1) # 讓成功訊息停留 1 秒鐘
