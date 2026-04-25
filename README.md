@@ -14,7 +14,7 @@
 
 ## 🛠️ 技術堆疊 (Tech Stack)
 
-* **前端介面**：[Streamlit](https://streamlit.io/)
+* **前端介面**：Streamlit
 * **資料處理與視覺化**：Pandas
 * **資料儲存**：CSV (本機儲存)
 
