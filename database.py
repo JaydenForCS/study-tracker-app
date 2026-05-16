@@ -1,18 +1,27 @@
 import sqlite3
+import hashlib # 新增：用來進行密碼加密的工具
+import pandas as pd
 
 def create_connection():
-    """建立與資料庫的連線"""
-    conn = sqlite3.connect('study_data.db')
-    return conn
+    return sqlite3.connect('study_data.db')
 
 def init_db():
-    """初始化資料庫：建立資料表"""
     conn = create_connection()
     cursor = conn.cursor()
-    # 建立表格的 SQL 語句
+    
+    # 1. 建立使用者表格
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password_hash TEXT NOT NULL
+        )
+    ''')
+    
+    # 2. 建立紀錄表格 (新增了 username 欄位)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,  -- 標記這筆紀錄是誰的
             date TEXT NOT NULL,
             subject TEXT NOT NULL,
             duration REAL NOT NULL,
@@ -22,22 +31,54 @@ def init_db():
     conn.commit()
     conn.close()
 
-def add_record(date, subject, duration, rating):
-    """新增一筆紀錄"""
+# --- 密碼處理邏輯 ---
+def make_hash(password):
+    """將密碼轉換為 Hash 亂碼"""
+    return hashlib.sha256(str.encode(password)).hexdigest()
+
+def create_user(username, password):
+    """註冊新帳號"""
+    conn = create_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', 
+                       (username, make_hash(password)))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        # 如果帳號已經存在，會觸發這個錯誤
+        return False
+    finally:
+        conn.close()
+
+def verify_user(username, password):
+    """驗證登入密碼"""
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT password_hash FROM users WHERE username = ?', (username,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    # 如果有找到帳號，且輸入的密碼 Hash 後與資料庫相符
+    if result and result[0] == make_hash(password):
+        return True
+    return False
+
+# --- 修改紀錄處理邏輯 ---
+def add_record(username, date, subject, duration, rating):
+    """新增一筆紀錄 (需要傳入 username)"""
     conn = create_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO records (date, subject, duration, rating)
-        VALUES (?, ?, ?, ?)
-    ''', (date, subject, duration, rating))
+        INSERT INTO records (username, date, subject, duration, rating)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (username, date, subject, duration, rating))
     conn.commit()
     conn.close()
 
-def get_all_records():
-    """取得所有紀錄"""
+def get_user_records(username):
+    """只取得特定使用者的紀錄"""
     conn = create_connection()
-    # 直接用 pandas 讀取 SQL 查詢結果，超方便！
-    import pandas as pd
-    df = pd.read_sql_query("SELECT * FROM records", conn)
+    df = pd.read_sql_query("SELECT * FROM records WHERE username = ?", conn, params=(username,))
     conn.close()
     return df
