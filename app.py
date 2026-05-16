@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from datetime import datetime
 import time
 
@@ -68,7 +69,6 @@ else:
     # 側邊欄：設定科目與專注度
     st.sidebar.header("📝 這次要讀什麼？")
     subject = st.sidebar.text_input("輸入科目名稱", "程式設計")
-    rating = st.sidebar.slider("為這次的專注度評分", 1, 5, 5)
 
     # 狀態保險箱
     if 'is_running' not in st.session_state:
@@ -93,7 +93,7 @@ else:
                 record_date = st.session_state.start_time.strftime('%Y-%m-%d %H:%M')
                 
                 # 🌟 改用 SQL 的 add_record，並把 username 傳進去
-                add_record(st.session_state.username, record_date, subject, minutes_spent, rating)
+                add_record(st.session_state.username, record_date, subject, minutes_spent)
                 
                 st.session_state.is_running = False
                 st.success(f"辛苦了！本次讀書 {minutes_spent} 分鐘，已成功存檔！圖表更新中...")
@@ -116,10 +116,9 @@ else:
 
     # --- 數據視覺化 (圖表) ---
     st.divider()
-    st.subheader("📈 讀書時間總覽")
+    st.subheader("📈 讀書時間總覽與佔比")
 
     if not df.empty:
-        # 注意：欄位名稱改成符合 SQL 設計的小寫 (date, subject, duration, rating)
         df['date'] = pd.to_datetime(df['date'])
         
         time_filter = st.radio("過濾時間範圍：", ["全部時間", "今天", "最近 7 天"], horizontal=True)
@@ -134,39 +133,27 @@ else:
             filtered_df = df 
 
         if not filtered_df.empty:
-            chart_data = filtered_df.groupby("subject")["duration"].sum()
-            st.bar_chart(chart_data)
+            # 讓 Pandas 把分組後的結果變成標準的表格格式 (as_index=False)
+            chart_data = filtered_df.groupby("subject", as_index=False)["duration"].sum()
+            
+            # 建立左右兩欄，讓長條圖和圓餅圖並排顯示
+            col_chart1, col_chart2 = st.columns(2)
+            
+            with col_chart1:
+                st.write("📊 各科讀書總時間")
+                # 使用 Plotly 畫長條圖：自動分配顏色 (color)，並在柱子上顯示數值 (text_auto)
+                fig_bar = px.bar(chart_data, x="subject", y="duration", color="subject", text_auto=True)
+                st.plotly_chart(fig_bar, use_container_width=True)
+                
+            with col_chart2:
+                st.write("🥧 各科時間佔比")
+                # 使用 Plotly 畫圓餅圖：hole=0.4 會讓中間空一個洞，變成超有質感的甜甜圈圖
+                fig_pie = px.pie(chart_data, values="duration", names="subject", hole=0.4)
+                # 微調圓餅圖的外觀，讓標籤顯示在區塊旁邊
+                fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig_pie, use_container_width=True)
         else:
             st.info(f"在「{time_filter}」這個範圍內，你還沒有任何讀書紀錄喔！")
-
-    # --- 專注度深度分析 ---
-    st.divider()
-    st.subheader("🎯 專注度深度分析")
-
-    if not df.empty:
-        stat_col1, stat_col2 = st.columns(2)
-
-        with stat_col1:
-            st.write("📖 各科平均專注度")
-            subject_rating = df.groupby("subject")["rating"].mean()
-            st.bar_chart(subject_rating)
-
-        with stat_col2:
-            st.write("📅 每日平均專注度")
-            daily_rating = df.groupby(df['date'].dt.date)["rating"].mean()
-            st.line_chart(daily_rating)
-
-        st.write("⏰ 不同時段專注度分析")
-        
-        def get_time_period(hour):
-            if 5 <= hour < 12: return "🌅 早上 (5-12)"
-            elif 12 <= hour < 18: return "☀️ 下午 (12-18)"
-            elif 18 <= hour < 24: return "🌙 晚上 (18-24)"
-            else: return "🦉 深夜 (0-5)"
-
-        df['Period'] = df['date'].dt.hour.apply(get_time_period)
-        period_rating = df.groupby("Period")["rating"].mean()
-        st.bar_chart(period_rating)
 
     # --- 手動補登紀錄 ---
     st.divider()
@@ -182,7 +169,6 @@ else:
             
         with col2:
             new_duration = st.number_input("讀書時長 (分鐘)", min_value=1, value=60)
-            new_rating = st.slider("專注度評分 (補登)", 1, 5, 4)
             
         submit_button = st.form_submit_button("💾 儲存補登紀錄", use_container_width=True)
         
@@ -190,7 +176,7 @@ else:
             datetime_str = f"{new_date} {new_time.strftime('%H:%M')}"
             
             # 🌟 加上 username 參數，並傳入手動輸入的值
-            add_record(st.session_state.username, datetime_str, new_subject, new_duration, new_rating)
+            add_record(st.session_state.username, datetime_str, new_subject, new_duration)
                 
             st.success("✅ 補登成功！圖表更新中...")
             time.sleep(1)

@@ -5,11 +5,13 @@ import pandas as pd
 def create_connection():
     return sqlite3.connect('study_data.db')
 
+# database.py 的局部修改
+
 def init_db():
     conn = create_connection()
     cursor = conn.cursor()
     
-    # 1. 建立使用者表格
+    # 建立使用者表格 (維持不變)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
@@ -17,17 +19,27 @@ def init_db():
         )
     ''')
     
-    # 2. 建立紀錄表格 (新增了 username 欄位)
+    # 建立紀錄表格 (移除 rating 欄位)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,  -- 標記這筆紀錄是誰的
+            username TEXT NOT NULL,
             date TEXT NOT NULL,
             subject TEXT NOT NULL,
-            duration REAL NOT NULL,
-            rating INTEGER NOT NULL
+            duration REAL NOT NULL
         )
     ''')
+    conn.commit()
+    conn.close()
+
+# 新增紀錄 (移除 rating 參數)
+def add_record(username, date, subject, duration):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO records (username, date, subject, duration)
+        VALUES (?, ?, ?, ?)
+    ''', (username, date, subject, duration))
     conn.commit()
     conn.close()
 
@@ -63,18 +75,6 @@ def verify_user(username, password):
     if result and result[0] == make_hash(password):
         return True
     return False
-
-# --- 修改紀錄處理邏輯 ---
-def add_record(username, date, subject, duration, rating):
-    """新增一筆紀錄 (需要傳入 username)"""
-    conn = create_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO records (username, date, subject, duration, rating)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (username, date, subject, duration, rating))
-    conn.commit()
-    conn.close()
 
 def get_user_records(username):
     """只取得特定使用者的紀錄"""
